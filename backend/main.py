@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import heapq
+import sqlite3
 import json
 import os
 from dotenv import load_dotenv
@@ -26,8 +26,30 @@ class TicketRequest(BaseModel):
     description: str
     category: str
 
-ticket_queue = []
-ticket_counter = 0
+def get_db_connection():
+    conn = sqlite3.connect("tickets.db")
+    conn.row_factory = sqlite3.Row #sql returns data as a tuple so this line tells SQLite to format the data like a Python dictionary
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS tickets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_email TEXT,
+            description TEXT,
+            category TEXT,
+            status TEXT,
+            ai_priority INTEGER
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# ticket_queue = []
+# ticket_counter = 0
+
+init_db()
 
 
 def get_ai_priority(description: str, category: str) -> int:
@@ -66,36 +88,52 @@ def get_ai_priority(description: str, category: str) -> int:
     except Exception as e:
         print("AI Error:", e)
         return 30
-
+#api endpoints start from here
 @app.get("/")
 def home():
     return {"status": "Online", "project": "TriageAI Backend"}
 
 @app.post("/tickets/")
 def create_ticket(ticket: TicketRequest):
-    global ticket_counter
-    ticket_counter += 1
+    # global ticket_counter
+    # ticket_counter += 1
+    ai_score = get_ai_priority(ticket.description, ticket.category)
+    conn = get_db_connection()
+    cursor = conn.cursor()
     
+    cursor.execute('''
+        INSERT INTO tickets (customer_email, description, category, status, ai_priority)
+        VALUES (?, ?, ?, ?, ?) 
+    ''', (ticket.customer_email, ticket.description, ticket.category, "Open", ai_score))# prevents SQL Injection by writing ?
+    conn.commit()
+    conn.close()
     
-    real_priority_score = get_ai_priority(ticket.description, ticket.category)
-    
-    new_ticket = {
-        "id": ticket_counter,
-        "customer": ticket.customer_email,
-        "original_text": ticket.description,
-        "category_assigned": ticket.category,
-        "status": "Open",
-        "ai_priority": real_priority_score
-    }
-    
-    # Push into max heap
-    heapq.heappush(ticket_queue, (-real_priority_score, ticket_counter, new_ticket))
-    return {"message": "Ticket Added to Queue", "ticket": new_ticket}
+    return {"message": "Ticket securely saved to database."}
 
 @app.get("/tickets/next/")
 def get_next_ticket():
-    if len(ticket_queue) == 0:
+    conn = get_db_connection()
+    ticket = conn.execute('''
+        SELECT * FROM tickets 
+        WHERE status = 'Open' 
+        ORDER BY ai_priority DESC, id ASC 
+        LIMIT 1
+    ''').fetchone()# limit 1 -Only hand me the single top row.
+    
+    if ticket is None:
+        conn.close()
         return {"message": "Queue is empty!"}
+    
+    conn.execute("UPDATE tickets SET status = 'In Progress' WHERE id = ?", (ticket["id"],))
+    conn.commit()
+    conn.close()
+    
+    return dict(ticket)
         
-    highest_priority_ticket = heapq.heappop(ticket_queue)
-    return highest_priority_ticket[2]
+@app.delete("/tickets/{ticket_id}")
+def resolve_ticket(ticket_id: int):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM tickets WHERE id = ?", (ticket_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Ticket resolved and removed."}
