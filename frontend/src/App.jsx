@@ -89,10 +89,27 @@ function App() {
     }
   }
 
-  const handleFeedbackSubmit = (e) => {
+  const handleFeedbackSubmit = async (e) => {
     e.preventDefault()
-    alert(`Thank you for rating us ${feedbackData.rating} stars! Your feedback helps us improve.`)
-    setFeedbackData({ rating: '5', comments: '' })
+    
+    try {
+      // 1. Send the data to your Python backend
+      await fetch('http://127.0.0.1:8000/feedback/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData)
+      })
+      
+      // 2. Show success message
+      alert(`Thank you for rating us ${feedbackData.rating} stars! Your feedback has been securely saved.`)
+      
+      // 3. Clear the form
+      setFeedbackData({ rating: '5', comments: '' }) 
+      
+    } catch (error) {
+      console.error("Error submitting feedback:", error)
+      alert("Failed to send feedback to the server.")
+    }
   }
 
   // ==========================================
@@ -148,52 +165,98 @@ function App() {
         {currentPage === 'dashboard' && (
           <div className="animate-fade-in-up">
             
-            {/* CUSTOMER VIEW (Scrollable Welcome + Form) */}
+          {/* CUSTOMER VIEW (Full Page Video Background + Scrolling Content) */}
             {role === 'customer' && (
-              <div className="flex flex-col items-center w-full">
+              <div className="relative flex flex-col items-center w-full min-h-screen bg-slate-900">
                 
-                {/* Full-Height Welcome Section */}
-                <div className="w-full flex flex-col items-center justify-center min-h-[70vh] bg-white border-b border-slate-200 text-center px-4">
-                  <h1 className="text-5xl font-light text-slate-900 mb-6 tracking-tight">
-                    Welcome to <span className="font-semibold">TriageAI</span>
-                  </h1>
-                  <p className="text-lg text-slate-500 max-w-2xl leading-relaxed mb-16">
-                    Our intelligent routing engine analyzes your request in real-time to ensure it reaches the correct department immediately. Let us know how we can assist you today.
-                  </p>
-                  <div className="text-slate-400 flex flex-col items-center animate-bounce">
-                    <span className="text-sm font-semibold uppercase tracking-widest mb-2">Scroll to Submit</span>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-                  </div>
-                </div>
+                {/* 1. THE FULL-PAGE FIXED VIDEO BACKGROUND */}
+                {/* Notice the 'fixed' class. This glues the video to the screen so it never scrolls away. */}
+                <video 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  className="fixed top-0 left-0 w-full h-full object-cover z-0 opacity-40 pointer-events-none"
+                >
+                  <source src="/network-bg.mp4" type="video/mp4" />
+                </video>
 
-                {/* Form Section (Below the fold) */}
-                <div className="max-w-xl w-full bg-white p-10 rounded-xl shadow-sm border border-slate-200 mt-24 mb-32">
-                  <h2 className="text-2xl font-semibold mb-8 text-slate-800 border-b border-slate-100 pb-4">Create a Support Ticket</h2>
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-600 mb-2">Email Address</label>
-                      <input type="email" required value={formData.customer_email} onChange={(e) => setFormData({...formData, customer_email: e.target.value})} className="w-full border border-slate-300 p-3 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" />
+                {/* 2. THE SCROLLING CONTENT (Sits on top of the video) */}
+                <div className="relative z-10 w-full flex flex-col items-center px-4">
+                  
+                  {/* Hero / Welcome Text */}
+                  <div className="flex flex-col items-center justify-center min-h-[70vh] text-center w-full max-w-3xl pt-20">
+                    <h1 className="text-5xl font-light text-white mb-6 tracking-tight drop-shadow-lg">
+                      Welcome to <span className="font-semibold text-blue-400">TriageAI</span>
+                    </h1>
+                    <p className="text-lg text-slate-300 leading-relaxed mb-16 drop-shadow">
+                      Our intelligent routing engine analyzes your request in real-time to ensure it reaches the correct teams immediately. Let us know how we can assist you today.
+                    </p>
+                    <div className="text-slate-400 flex flex-col items-center animate-bounce">
+                      <span className="text-sm font-semibold uppercase tracking-widest mb-2 drop-shadow">Scroll to Submit</span>
+                      <svg className="w-6 h-6 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-600 mb-2">Issue Category</label>
-                      <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full border border-slate-300 p-3 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition bg-white">
-                        <option>General Inquiry</option>
-                        <option>Technical Support</option>
-                        <option>Billing & Sponsorship</option>
-                      </select>
+                  </div>
+
+                  {/* Premium White Form Box */}
+                  <div className="max-w-xl w-full bg-white p-10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 mt-10 mb-32 relative overflow-hidden backdrop-blur-md">
+                    
+                    {/* Premium Brand Accent Line */}
+                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+                    
+                    <div className="mb-8">
+                      <h2 className="text-2xl font-black text-slate-800 tracking-tight">Create a Support Ticket</h2>
+                      <p className="text-sm text-slate-500 mt-1">Our AI will route your request immediately.</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-600 mb-2">Description</label>
-                      <textarea rows="5" required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full border border-slate-300 p-3 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition resize-none" />
-                    </div>
-                    <button type="submit" className="mt-2 bg-slate-900 text-white font-semibold py-3.5 rounded-md hover:bg-slate-800 transition shadow-sm">
-                      Submit Ticket
-                    </button>
-                  </form>
+
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                        <input 
+                          type="email" 
+                          required 
+                          value={formData.customer_email} 
+                          onChange={(e) => setFormData({...formData, customer_email: e.target.value})} 
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3.5 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200 placeholder-slate-400 font-medium" 
+                          placeholder="name@company.com" 
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Issue Category</label>
+                        <select 
+                          value={formData.category} 
+                          onChange={(e) => setFormData({...formData, category: e.target.value})} 
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3.5 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200 cursor-pointer font-medium"
+                        >
+                          <option>General Inquiry</option>
+                          <option>Technical Support</option>
+                          <option>Billing & Sponsorship</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                        <textarea 
+                          rows="5" 
+                          required 
+                          value={formData.description} 
+                          onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3.5 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200 resize-none placeholder-slate-400 font-medium" 
+                          placeholder="Please provide details about your request..." 
+                        />
+                      </div>
+                      
+                      <button type="submit" className="mt-4 w-full bg-slate-900 text-white font-bold py-4 rounded-lg hover:bg-blue-600 transition-colors duration-300 shadow-md">
+                        Submit Ticket
+                      </button>
+                    </form>
+                  </div>
+
                 </div>
               </div>
             )}
-
+            
             {/* AGENT VIEW */}
             {role === 'agent' && (
                <div className="max-w-3xl mx-auto flex flex-col items-center mt-16 px-4">
@@ -281,23 +344,47 @@ function App() {
           </div>
         )}
 
-        {/* 2. ABOUT PAGE (Remains unchanged below the new hero) */}
+        {/* 2. ABOUT PAGE (Upgraded Enterprise Terminology) */}
         {currentPage === 'about' && (
-          <div className="max-w-4xl mx-auto bg-white p-10 rounded shadow-sm border border-slate-200 mt-[-20px] relative z-10 animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">System Architecture</h2>
-            <p className="text-base text-slate-600 leading-relaxed mb-8">
-              TriageAI is an intelligent routing system designed to solve the "Deli Counter Problem" in modern customer support. Instead of treating all tickets equally in a standard queue, our engine analyzes and prioritizes incoming requests in real-time.
-            </p>
+          <div className="max-w-4xl mx-auto bg-white p-10 rounded-2xl shadow-sm border border-slate-200 mt-[-20px] relative z-10 animate-fade-in-up mb-20">
             
-            <div className="grid md:grid-cols-2 gap-6 mt-8">
-              <div className="bg-slate-50 p-6 rounded border border-slate-200">
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">Automated Prioritization</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">Powered by LLMs, TriageAI assigns a 1-100 priority score to every ticket, ensuring human agents always resolve the most critical issues first to prevent VIP customer churn.</p>
+            {/* Header Section */}
+            <div className="border-b border-slate-100 pb-8 mb-8 text-center md:text-left">
+              <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">System Architecture</h2>
+              <p className="text-lg text-slate-600 leading-relaxed">
+                TriageAI is an intelligent routing platform designed to eliminate chronological routing bottlenecks in modern customer support. Instead of treating all tickets equally in a static, first-in-first-out (FIFO) queue, our engine analyzes and prioritizes incoming requests in real-time.
+              </p>
+            </div>
+            
+            {/* 2-Grid Conceptual Layout */}
+            <div className="grid md:grid-cols-2 gap-8">
+              
+              {/* Card 1: Prioritization */}
+              <div className="bg-slate-50 p-8 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="bg-blue-100 text-blue-600 p-3 rounded-xl shadow-inner">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">Intelligent Prioritization</h3>
+                </div>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Powered by natural language processing, the system assigns a dynamic 1-100 priority score to every inbound ticket. This guarantees that human agents consistently pull the most critical issues first, actively reducing response times for high-impact problems and preventing customer churn.
+                </p>
               </div>
-              <div className="bg-slate-50 p-6 rounded border border-slate-200">
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">Human-in-the-Loop Validation</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">To ensure quality, any ticket that returns an AI confidence score below 70% is safely quarantined. A human manager reviews these edge-cases, preventing spam from impacting agent metrics.</p>
+
+              {/* Card 2: HITL */}
+              <div className="bg-slate-50 p-8 rounded-xl border border-slate-200 hover:border-purple-300 transition-colors shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="bg-purple-100 text-purple-600 p-3 rounded-xl shadow-inner">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">Human-in-the-Loop Validation</h3>
+                </div>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  To ensure absolute quality control, the system employs strict confidence thresholds. If a ticket's analysis falls below an acceptable certainty such as with spam, gibberish, or highly complex edge-cases, it is safely quarantined. A manager then reviews these flagged items, preventing noise from disrupting the main agent queue.
+                </p>
               </div>
+
             </div>
           </div>
         )}

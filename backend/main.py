@@ -25,6 +25,10 @@ class TicketRequest(BaseModel):
     description: str
     category: str
 
+class Feedback(BaseModel):
+    rating: str
+    comments: str
+
 def get_db_connection():
     conn = sqlite3.connect("tickets.db")
     conn.row_factory = sqlite3.Row #sql returns data as a tuple so this line tells SQLite to format the data like a Python dictionary
@@ -43,6 +47,13 @@ def init_db():
             ai_priority INTEGER,
             confidence INTEGER,
             needs_review BOOLEAN
+        )
+    ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS feedbacks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rating TEXT,
+            comments TEXT
         )
     ''')
     conn.commit()
@@ -165,6 +176,18 @@ def approve_ticket(ticket_id: int):
     conn.commit()
     conn.close()
     return {"message": "Ticket approved and pushed to Open queue."}
+
+# user feedback
+@app.post("/feedback/")
+def submit_feedback(feedback: Feedback):
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT INTO feedbacks (rating, comments) VALUES (?, ?)", 
+        (feedback.rating, feedback.comments)
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "Feedback securely saved to database!"}
         
 @app.delete("/tickets/{ticket_id}")
 def resolve_ticket(ticket_id: int):
