@@ -18,7 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#Connecting to the AI
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 class TicketRequest(BaseModel):
@@ -33,6 +32,7 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
+    # Added confidence 
     conn.execute('''
         CREATE TABLE IF NOT EXISTS tickets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +40,9 @@ def init_db():
             description TEXT,
             category TEXT,
             status TEXT,
-            ai_priority INTEGER
+            ai_priority INTEGER,
+            confidence INTEGER,
+            needs_review BOOLEAN
         )
     ''')
     conn.commit()
@@ -51,16 +53,20 @@ def init_db():
 
 init_db()
 
-
-def get_ai_priority(description: str, category: str) -> int:
+def get_ai_analysis(description: str, category: str) -> dict:
     system_prompt = """
     You are an expert customer support triage AI.
-    Analyze the ticket and assign a priority score from 1 to 100.
-    1 = lowest priority. 100 = highest emergency (loss of money, system down).
-    You must return ONLY a raw JSON object with a single key "priority".
-    DO NOT wrap the output in markdown blocks like ```json. 
-    Do not add any conversational text.
-    Example exactly like this: {"priority": 85}
+    Analyze the ticket and assign two scores from 1 to 100.
+    
+    1. "priority": 1 = lowest priority, 100 = highest emergency.
+    2. "confidence": How sure are you that this is a valid, actionable support ticket? 
+       (100 = clear, valid support request. 1 = gibberish, spam, or completely unrelated to customer support).
+    
+    CRITICAL RULE: If the user description is gibberish, a joke, or makes no logical sense, your "confidence" score MUST be 10.
+    
+    You must return ONLY a raw JSON object with these two keys.
+    DO NOT wrap the output in markdown blocks. 
+    Example exactly like this: {"priority": 85, "confidence": 95}
     """
     
     user_prompt = f"Category: {category}\nDescription: {description}"
@@ -76,18 +82,21 @@ def get_ai_priority(description: str, category: str) -> int:
             temperature=0.0 
         )
         
-        
         response_text = chat_completion.choices[0].message.content
-        
         # Clean the text just in case the AI adds invisible spaces or markdown
         cleaned_text = response_text.strip().removeprefix("```json").removesuffix("```").strip()
-        
         data = json.loads(cleaned_text)
-        return int(data.get("priority", 30)) 
+        
+        # default to 30 priority and 0 confidence if it breaks
+        return {
+            "priority": int(data.get("priority", 30)),
+            "confidence": int(data.get("confidence", 0))
+        }
         
     except Exception as e:
         print("AI Error:", e)
-        return 30
+        return {"priority": 30, "confidence": 0}
+
 #api endpoints start from here
 @app.get("/")
 def home():
@@ -95,30 +104,40 @@ def home():
 
 @app.post("/tickets/")
 def create_ticket(ticket: TicketRequest):
-    # global ticket_counter
-    # ticket_counter += 1
-    ai_score = get_ai_priority(ticket.description, ticket.category)
+    ai_data = get_ai_analysis(ticket.description, ticket.category)
+    
+    # human review if the confidence drops below 70
+    if ai_data["confidence"] < 70:
+        assigned_status = "Needs Review"
+        needs_review_flag = True
+    else:
+        assigned_status = "Open"
+        needs_review_flag = False
+
     conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
-        INSERT INTO tickets (customer_email, description, category, status, ai_priority)
-        VALUES (?, ?, ?, ?, ?) 
-    ''', (ticket.customer_email, ticket.description, ticket.category, "Open", ai_score))# prevents SQL Injection by writing ?
+        INSERT INTO tickets (customer_email, description, category, status, ai_priority, confidence, needs_review)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (ticket.customer_email, ticket.description, ticket.category, assigned_status, ai_data["priority"], ai_data["confidence"], needs_review_flag))
+    
     conn.commit()
     conn.close()
     
-    return {"message": "Ticket securely saved to database."}
+    return {"message": "Ticket securely saved.", "status": assigned_status}
 
 @app.get("/tickets/next/")
 def get_next_ticket():
     conn = get_db_connection()
+    
+    # ONLY pull tickets that are 'Open'
     ticket = conn.execute('''
         SELECT * FROM tickets 
         WHERE status = 'Open' 
         ORDER BY ai_priority DESC, id ASC 
         LIMIT 1
-    ''').fetchone()# limit 1 -Only hand me the single top row.
+    ''').fetchone() # limit 1 -Only hand me the single top row.
     
     if ticket is None:
         conn.close()
