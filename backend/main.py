@@ -148,6 +148,23 @@ def get_next_ticket():
     conn.close()
     
     return dict(ticket)
+
+#get all tickets that need human review
+@app.get("/tickets/review/")
+def get_review_tickets():
+    conn = get_db_connection()
+    tickets = conn.execute("SELECT * FROM tickets WHERE status = 'Needs Review' ORDER BY id ASC").fetchall()
+    conn.close()
+    return [dict(t) for t in tickets]
+
+# approve a ticket and push it to the main queue
+@app.put("/tickets/{ticket_id}/approve")
+def approve_ticket(ticket_id: int):
+    conn = get_db_connection()
+    conn.execute("UPDATE tickets SET status = 'Open' WHERE id = ?", (ticket_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Ticket approved and pushed to Open queue."}
         
 @app.delete("/tickets/{ticket_id}")
 def resolve_ticket(ticket_id: int):
