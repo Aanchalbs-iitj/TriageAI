@@ -137,28 +137,35 @@ def create_ticket(ticket: TicketRequest):
     conn.close()
     
     return {"message": "Ticket securely saved.", "status": assigned_status}
-
+# limit 1 -Only hand me the single top row.
 @app.get("/tickets/next/")
-def get_next_ticket():
+def get_next_ticket(category: str = "All"):
     conn = get_db_connection()
     
-    # ONLY pull tickets that are 'Open'
-    ticket = conn.execute('''
-        SELECT * FROM tickets 
-        WHERE status = 'Open' 
-        ORDER BY ai_priority DESC, id ASC 
-        LIMIT 1
-    ''').fetchone() # limit 1 -Only hand me the single top row.
-    
+    # If a specific category is requested, filter by it. Otherwise, pull from all.
+    if category != "All":
+        ticket = conn.execute(
+            "SELECT * FROM tickets WHERE status = 'Open' AND category = ? ORDER BY ai_priority DESC LIMIT 1",
+            (category,)
+        ).fetchone()
+    else:
+        ticket = conn.execute(
+            "SELECT * FROM tickets WHERE status = 'Open' ORDER BY ai_priority DESC LIMIT 1"
+        ).fetchone()
+
     if ticket is None:
         conn.close()
-        return {"message": "Queue is empty!"}
-    
-    conn.execute("UPDATE tickets SET status = 'In Progress' WHERE id = ?", (ticket["id"],))
+        return {"message": f"Queue is empty for {category}!"}
+
+    # Mark the ticket as In Progress
+    conn.execute("UPDATE tickets SET status = 'In Progress' WHERE id = ?", (ticket['id'],))
     conn.commit()
+    
+    updated_ticket = dict(ticket)
+    updated_ticket['status'] = 'In Progress'
     conn.close()
     
-    return dict(ticket)
+    return updated_ticket
 
 #get all tickets that need human review
 @app.get("/tickets/review/")

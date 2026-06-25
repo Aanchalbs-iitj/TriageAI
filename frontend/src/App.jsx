@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-
+const [agentDepartment, setAgentDepartment] = useState('All') // Tracks which queue the agent is working
 function App() {
   // Navigation and authentication states
   const [currentPage, setCurrentPage] = useState('dashboard') // 'dashboard', 'about', 'feedback'
@@ -43,16 +43,20 @@ function App() {
 
   const fetchNextTicket = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/tickets/next/')
+      // Send the selected department to the Python backend
+      const response = await fetch(`http://127.0.0.1:8000/tickets/next/?category=${encodeURIComponent(agentDepartment)}`)
       const data = await response.json()
-      if (data.message === "Queue is empty!") {
-        showToast("Inbox Zero! No open tickets.", "info")
+      
+      if (data.message && data.message.includes("Queue is empty")) {
+        showToast(`Inbox Zero! No open tickets for ${agentDepartment}.`, "info")
         setCurrentTicket(null)
       } else {
         setCurrentTicket(data)
+        showToast("New critical ticket assigned.", "success")
       }
     } catch (error) {
       console.error("Error fetching ticket:", error)
+      showToast("Failed to pull next ticket.", "error")
     }
   }
 
@@ -278,32 +282,52 @@ function App() {
               </div>
             )}
             
-            {/* agent view*/}
+            {/* agent view with department selection */}
             {role === 'agent' && (
-               <div className="max-w-3xl mx-auto flex flex-col items-center mt-16 px-4">
+               <div className="max-w-3xl mx-auto flex flex-col items-center mt-16 px-4 mb-32 z-10 relative">
+               
                {!currentTicket ? (
-                 <button onClick={fetchNextTicket} className="bg-blue-600 text-white text-lg font-semibold py-4 px-8 rounded shadow-sm hover:bg-blue-700 transition">
-                   Pull Next Urgent Ticket
-                 </button>
+                 <div className="bg-white p-10 rounded-2xl shadow-xl border border-slate-200 flex flex-col items-center w-full">
+                    <h2 className="text-2xl font-black text-slate-800 mb-2">Agent Workspace</h2>
+                    <p className="text-slate-500 mb-8 text-sm">Select your department shift to begin routing.</p>
+                    
+                    <div className="w-full max-w-md mb-6">
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Assigned Department</label>
+                      <select 
+                        value={agentDepartment} 
+                        onChange={(e) => setAgentDepartment(e.target.value)} 
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3.5 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200 cursor-pointer font-medium"
+                      >
+                        <option value="All">Cross-Functional (All Departments)</option>
+                        <option value="General Inquiry">General Inquiry</option>
+                        <option value="Technical Support">Technical Support</option>
+                        <option value="Billing & Sponsorship">Billing & Sponsorship</option>
+                      </select>
+                    </div>
+
+                    <button onClick={fetchNextTicket} className="w-full max-w-md bg-blue-600 text-white text-lg font-bold py-4 px-8 rounded-lg shadow-md hover:bg-blue-700 transition">
+                      Pull Next Urgent Ticket
+                    </button>
+                 </div>
                ) : (
-                 <div className="w-full bg-white p-8 rounded-lg border-l-4 border-blue-600 shadow-sm border-y border-r border-slate-200">
+                 <div className="w-full bg-white p-8 rounded-2xl border-l-8 border-blue-600 shadow-xl border-y border-r border-slate-200">
                    <div className="flex justify-between items-start mb-8">
                      <div>
-                       <span className="font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded text-sm">{currentTicket.category}</span>
+                       <span className="font-bold text-blue-700 bg-blue-50 px-4 py-1.5 rounded-full text-sm">{currentTicket.category}</span>
                        <h3 className="text-slate-500 text-sm mt-4">Customer: <span className="font-medium text-slate-900">{currentTicket.customer_email}</span></h3>
                      </div>
-                     <div className="text-right bg-slate-50 p-3 rounded border border-slate-100">
-                       <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">AI Priority</span>
-                       <span className="text-3xl font-bold text-slate-800">{currentTicket.ai_priority} <span className="text-sm font-normal text-slate-400">/ 100</span></span>
+                     <div className="text-right bg-red-50 p-3 rounded-xl border border-red-100">
+                       <span className="text-xs text-red-600 font-bold uppercase tracking-wider block mb-1">AI Priority</span>
+                       <span className="text-4xl font-black text-red-600">{currentTicket.ai_priority} <span className="text-sm font-bold text-red-400">/ 100</span></span>
                      </div>
                    </div>
                    
-                   <div className="bg-slate-50 p-5 rounded border border-slate-100 mb-8">
-                     <p className="text-slate-800 text-base leading-relaxed whitespace-pre-wrap">{currentTicket.description}</p>
+                   <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-8">
+                     <p className="text-slate-800 text-lg leading-relaxed whitespace-pre-wrap">{currentTicket.description}</p>
                    </div>
                    
-                   <button onClick={handleResolve} className="w-full bg-slate-900 text-white font-semibold py-3 rounded hover:bg-slate-800 transition">
-                     Mark as Resolved & Close
+                   <button onClick={handleResolve} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-black transition shadow-md">
+                     ✓ Mark as Resolved & Close
                    </button>
                  </div>
                )}
