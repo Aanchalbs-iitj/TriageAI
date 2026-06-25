@@ -339,7 +339,7 @@ function App() {
             {role === 'agent' && currentPage === 'dashboard' && (
               <div className="relative min-h-screen w-full flex flex-col items-center pt-20 pb-32 px-4 bg-slate-900">
                 
-                {/* 1. AGENT VIDEO BACKGROUND */}
+                {/* agent video bg */}
                 <video autoPlay loop muted playsInline className="fixed top-0 left-0 w-full h-full object-cover z-0 opacity-40 pointer-events-none">
                   <source src="/agent-bg.mp4" type="video/mp4" />
                 </video>
@@ -348,14 +348,14 @@ function App() {
 
                 <div className="relative z-10 w-full max-w-3xl flex flex-col items-center">
                   
-                  {/* Glowing Header */}
+                  
                   <div className="text-center mb-10 w-full">
                     <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-lg">Agent Workspace</h2>
                     <p className="text-slate-400 font-medium mt-2">Active Shift: <span className="text-blue-400">{agentDepartment}</span></p>
                   </div>
 
                   {!currentTicket ? (
-                    /* EMPTY STATE / SHIFT SELECTOR (Glassmorphism) */
+                    
                     <div className="bg-white/95 backdrop-blur-xl p-10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/20 flex flex-col items-center w-full relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
                       
@@ -410,7 +410,6 @@ function App() {
             {role === 'manager' && currentPage === 'dashboard' && (
               <div className="relative min-h-screen w-full pt-16 pb-32 px-4 bg-slate-900">
                 
-                {/* 1. HUMAN REVIEW VIDEO BACKGROUND */}
                 <video autoPlay loop muted playsInline className="fixed top-0 left-0 w-full h-full object-cover z-0 opacity-30 pointer-events-none">
                   <source src="/manager-bg.mp4" type="video/mp4" />
                 </video>
@@ -419,7 +418,7 @@ function App() {
 
                 <div className="relative z-10 max-w-6xl mx-auto">
                   
-                  {/* --- HUMAN REVIEW SANDBOX --- */}
+                  {/*human review */}
                   <div className="flex justify-between items-end mb-8 border-b border-white/20 pb-4">
                     <div>
                       <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">Human Review Sandbox</h2>
@@ -442,7 +441,7 @@ function App() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-5">
-                      {/* ... rest of the code remains exactly the same ... */}
+
                       {reviewTickets.map(ticket => (
                         <div key={ticket.id} className="bg-white/95 backdrop-blur-xl p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-white/20 flex flex-col md:flex-row gap-6 items-center transition-transform hover:scale-[1.01]">
                           <div className="flex flex-col gap-3 min-w-[120px] text-center">
@@ -476,7 +475,7 @@ function App() {
                     </div>
                   )}
 
-                  {/* --- COMPANY FEEDBACK INBOX --- */}
+                  {/* company feedback */}
                   <div className="mt-20 border-t border-white/20 pt-12 mb-20">
                     <div className="flex justify-between items-end mb-8 border-b border-white/20 pb-4">
                       <div>
@@ -524,42 +523,52 @@ function App() {
 
         {/* about page */}
         {currentPage === 'about' && (
-          <div className="max-w-4xl mx-auto bg-white p-10 rounded-2xl shadow-sm border border-slate-200 mt-[-20px] relative z-10 animate-fade-in-up mb-20">
+          <div className="max-w-5xl mx-auto bg-white p-10 rounded-2xl shadow-sm border border-slate-200 mt-[-20px] relative z-10 animate-fade-in-up mb-20">
             
             {/* Header Section */}
-            <div className="border-b border-slate-100 pb-8 mb-8 text-center md:text-left">
-              <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">System Architecture</h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
-                TriageAI is an intelligent routing platform designed to eliminate chronological routing bottlenecks in modern customer support. Instead of treating all tickets equally in a static, first-in-first-out (FIFO) queue, our engine analyzes and prioritizes incoming requests in real-time.
+            <div className="border-b border-slate-100 pb-8 mb-10 text-center">
+              <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">How TriageAI Works</h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                We replaced the traditional "first-come, first-served" support queue with an intelligent pipeline. Here is exactly what happens when a customer submits a ticket.
               </p>
             </div>
             
-            {/* Grid Conceptual Layout */}
-            <div className="grid md:grid-cols-2 gap-8">
+            {/* 3-Step Process Grid */}
+            <div className="grid md:grid-cols-3 gap-6 relative">
               
-              {/* Card 1: Prioritization */}
-              <div className="bg-slate-50 p-8 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors shadow-sm">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="bg-blue-100 text-blue-600 p-3 rounded-xl shadow-inner">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800">Intelligent Prioritization</h3>
+              {/*Connecting line behind the cards for desktop */}
+              <div className="hidden md:block absolute top-12 left-[16%] w-[68%] h-0.5 bg-slate-100 z-0"></div>
+
+              {/* Step 1: Submit */}
+              <div className="bg-slate-50 p-8 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors shadow-sm relative z-10 flex flex-col items-center text-center">
+                <div className="bg-white text-slate-600 p-4 rounded-full shadow-md border border-slate-100 mb-5">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">1. Customer Submits</h3>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  Powered by natural language processing, the system assigns a dynamic 1-100 priority score to every inbound ticket. This guarantees that human agents consistently pull the most critical issues first, actively reducing response times for high-impact problems and preventing customer churn.
+                  A user fills out the support form describing their issue. Instead of sitting at the back of a massive line, the ticket is instantly sent to our backend engine.
                 </p>
               </div>
 
-              {/* Card 2: human review */}
-              <div className="bg-slate-50 p-8 rounded-xl border border-slate-200 hover:border-purple-300 transition-colors shadow-sm">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="bg-purple-100 text-purple-600 p-3 rounded-xl shadow-inner">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800">Human-in-the-Loop Validation</h3>
+              {/* Step 2: AI Analyzes */}
+              <div className="bg-blue-50 p-8 rounded-xl border border-blue-100 hover:border-blue-300 transition-colors shadow-sm relative z-10 flex flex-col items-center text-center">
+                <div className="bg-blue-600 text-white p-4 rounded-full shadow-md border border-blue-500 mb-5">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
+                <h3 className="text-xl font-bold text-blue-900 mb-2">2. AI Analyzes</h3>
+                <p className="text-blue-800/80 text-sm leading-relaxed">
+                  Our LLM instantly reads the text, figures out which department it belongs to, and assigns it an urgency score (1-100) based on how critical the issue is.
+                </p>
+              </div>
+
+              {/* Step 3: Smart Routing */}
+              <div className="bg-slate-50 p-8 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors shadow-sm relative z-10 flex flex-col items-center text-center">
+                <div className="bg-white text-green-600 p-4 rounded-full shadow-md border border-slate-100 mb-5">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">3. Smart Routing</h3>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  To ensure absolute quality control, the system employs strict confidence thresholds. If a ticket's analysis falls below an acceptable certainty such as with spam, gibberish, or highly complex edge-cases, it is safely quarantined. A manager then reviews these flagged items, preventing noise from disrupting the main agent queue.
+                  Urgent tickets are pushed to the very top of the Support Agent's dashboard. If the AI is confused or thinks it's spam, it sends it to a Manager for human review.
                 </p>
               </div>
 
@@ -571,7 +580,7 @@ function App() {
         {currentPage === 'feedback' && (
           <div className="relative min-h-screen w-full flex flex-col items-center pt-24 px-4 bg-slate-900 pb-32">
             
-            {/* 1. FEEDBACK VIDEO BACKGROUND */}
+            {/* 1. feedback video background */}
             <video autoPlay loop muted playsInline className="fixed top-0 left-0 w-full h-full object-cover z-0 opacity-40 pointer-events-none">
               <source src="/network-bg.mp4" type="video/mp4" />
             </video>
@@ -582,7 +591,6 @@ function App() {
             {/* Glowing Glassmorphism Form Container */}
             <div className="relative z-10 max-w-xl w-full bg-white/95 backdrop-blur-xl p-10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/20 animate-fade-in-up overflow-hidden">
               
-              {/* Premium Brand Accent Line */}
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
 
               <h2 className="text-2xl font-black mb-2 text-slate-800 tracking-tight">Platform Feedback</h2>
