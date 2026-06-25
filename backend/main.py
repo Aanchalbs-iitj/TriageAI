@@ -12,7 +12,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,6 +24,11 @@ class TicketRequest(BaseModel):
     customer_email: str
     description: str
     category: str
+
+class Feedback(BaseModel):
+    customer_email: str
+    rating: str
+    comments: str
 
 def get_db_connection():
     conn = sqlite3.connect("tickets.db")
@@ -45,6 +50,17 @@ def init_db():
             needs_review BOOLEAN
         )
     ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS feedbacks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_email TEXT,
+            rating TEXT,
+            comments TEXT
+        )
+    ''')
+    feedback_columns = [row["name"] for row in conn.execute("PRAGMA table_info(feedbacks)").fetchall()]
+    if "customer_email" not in feedback_columns:
+        conn.execute("ALTER TABLE feedbacks ADD COLUMN customer_email TEXT DEFAULT 'unknown@example.com'")
     conn.commit()
     conn.close()
 
@@ -126,28 +142,78 @@ def create_ticket(ticket: TicketRequest):
     conn.close()
     
     return {"message": "Ticket securely saved.", "status": assigned_status}
-
+# limit 1 -Only hand me the single top row.
 @app.get("/tickets/next/")
-def get_next_ticket():
+def get_next_ticket(category: str = "All"):
     conn = get_db_connection()
     
-    # ONLY pull tickets that are 'Open'
-    ticket = conn.execute('''
-        SELECT * FROM tickets 
-        WHERE status = 'Open' 
-        ORDER BY ai_priority DESC, id ASC 
-        LIMIT 1
-    ''').fetchone() # limit 1 -Only hand me the single top row.
-    
+    # If a specific category is requested, filter by it. Otherwise, pull from all.
+    if category != "All":
+        ticket = conn.execute(
+            "SELECT * FROM tickets WHERE status = 'Open' AND category = ? ORDER BY ai_priority DESC LIMIT 1",
+            (category,)
+        ).fetchone()
+    else:
+        ticket = conn.execute(
+            "SELECT * FROM tickets WHERE status = 'Open' ORDER BY ai_priority DESC LIMIT 1"
+        ).fetchone()
+
     if ticket is None:
         conn.close()
-        return {"message": "Queue is empty!"}
-    
-    conn.execute("UPDATE tickets SET status = 'In Progress' WHERE id = ?", (ticket["id"],))
+        return {"message": f"Queue is empty for {category}!"}
+
+    # Mark the ticket as In Progress
+    conn.execute("UPDATE tickets SET status = 'In Progress' WHERE id = ?", (ticket['id'],))
     conn.commit()
+    
+    updated_ticket = dict(ticket)
+    updated_ticket['status'] = 'In Progress'
     conn.close()
     
-    return dict(ticket)
+    return updated_ticket
+
+# Fetch review tickets by urgency first, then oldest within the same priority.
+@app.get("/tickets/review/")
+def get_review_tickets(limit: int = 5):
+    conn = get_db_connection()
+    tickets = conn.execute(
+        "SELECT * FROM tickets WHERE status = 'Needs Review' ORDER BY ai_priority DESC, id ASC LIMIT ?",
+        (limit,)
+    ).fetchall()
+    conn.close()
+    return [dict(t) for t in tickets]
+
+# approve a ticket and push it to the main queue
+@app.put("/tickets/{ticket_id}/approve")
+def approve_ticket(ticket_id: int):
+    conn = get_db_connection()
+    conn.execute("UPDATE tickets SET status = 'Open' WHERE id = ?", (ticket_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Ticket approved and pushed to Open queue."}
+
+# user feedback
+@app.post("/feedback/")
+def submit_feedback(feedback: Feedback):
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT INTO feedbacks (customer_email, rating, comments) VALUES (?, ?, ?)", 
+        (feedback.customer_email, feedback.rating, feedback.comments)
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "Feedback securely saved to database!"}
+
+# Fetch only the most recent feedback for the Manager Dashboard to prevent UI overload.
+@app.get("/feedback/")
+def get_feedbacks(limit: int = 9):
+    conn = get_db_connection()
+    feedbacks = conn.execute(
+        "SELECT * FROM feedbacks ORDER BY id DESC LIMIT ?",
+        (limit,)
+    ).fetchall()
+    conn.close()
+    return [dict(item) for item in feedbacks]
         
 @app.delete("/tickets/{ticket_id}")
 def resolve_ticket(ticket_id: int):
