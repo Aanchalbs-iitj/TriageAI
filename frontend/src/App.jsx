@@ -103,8 +103,7 @@ function App() {
       const data = await response.json()
       setFeedbacksList(data)
       if (showSuccessToast) {
-        showToast(`Feedback refreshed: ${data.length} item${data.length === 1 ? '' : 's'}.`, "info")
-      }
+       showToast("Latest feedback synced successfully.", "success")}
     } catch (error) {
       console.error("Error fetching feedback:", error)
       showToast("Could not refresh feedback. Restart the backend if this endpoint is missing.", "error")
@@ -410,11 +409,11 @@ function App() {
             {role === 'manager' && currentPage === 'dashboard' && (
               <div className="relative min-h-screen w-full pt-16 pb-32 px-4 bg-slate-900">
                 
-                <video autoPlay loop muted playsInline className="fixed top-0 left-0 w-full h-full object-cover z-0 opacity-30 pointer-events-none">
+                <video autoPlay loop muted playsInline className="fixed top-0 left-0 w-full h-full object-cover z-0 opacity-60 pointer-events-none">
                   <source src="/manager-bg.mp4" type="video/mp4" />
                 </video>
-                {/* Dark Overlay for Readability */}
-                <div className="fixed inset-0 bg-slate-900/80 z-0"></div>
+                {/* Dark Overlay */}
+                <div className="fixed inset-0 bg-slate-900/40 z-0"></div>
 
                 <div className="relative z-10 max-w-6xl mx-auto">
                   
@@ -422,7 +421,7 @@ function App() {
                   <div className="flex justify-between items-end mb-8 border-b border-white/20 pb-4">
                     <div>
                       <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">Human Review Sandbox</h2>
-                      <p className="text-sm text-slate-400 mt-2 font-medium">Tickets flagged by AI due to low confidence scores requiring human validation.</p>
+                      <p className="text-sm text-slate-400 mt-2 font-medium">Showing the highest-priority tickets flagged by AI for human validation.</p>
                     </div>
                     <button
                       type="button"
@@ -479,8 +478,8 @@ function App() {
                   <div className="mt-20 border-t border-white/20 pt-12 mb-20">
                     <div className="flex justify-between items-end mb-8 border-b border-white/20 pb-4">
                       <div>
-                        <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">Platform Feedback</h2>
-                        <p className="text-sm text-slate-400 mt-2 font-medium">Direct feedback and ratings submitted by users.</p>
+                        <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">Recent Platform Feedback</h2>
+                        <p className="text-sm text-slate-400 mt-2 font-medium">Showing the latest ratings submitted by users.</p>
                       </div>
                       <button
                         type="button"

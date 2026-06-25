@@ -172,11 +172,14 @@ def get_next_ticket(category: str = "All"):
     
     return updated_ticket
 
-#get all tickets that need human review
+# Fetch review tickets by urgency first, then oldest within the same priority.
 @app.get("/tickets/review/")
-def get_review_tickets():
+def get_review_tickets(limit: int = 5):
     conn = get_db_connection()
-    tickets = conn.execute("SELECT * FROM tickets WHERE status = 'Needs Review' ORDER BY id ASC").fetchall()
+    tickets = conn.execute(
+        "SELECT * FROM tickets WHERE status = 'Needs Review' ORDER BY ai_priority DESC, id ASC LIMIT ?",
+        (limit,)
+    ).fetchall()
     conn.close()
     return [dict(t) for t in tickets]
 
@@ -201,10 +204,14 @@ def submit_feedback(feedback: Feedback):
     conn.close()
     return {"message": "Feedback securely saved to database!"}
 
+# Fetch only the most recent feedback for the Manager Dashboard to prevent UI overload.
 @app.get("/feedback/")
-def get_feedbacks():
+def get_feedbacks(limit: int = 9):
     conn = get_db_connection()
-    feedbacks = conn.execute("SELECT * FROM feedbacks ORDER BY id DESC").fetchall()
+    feedbacks = conn.execute(
+        "SELECT * FROM feedbacks ORDER BY id DESC LIMIT ?",
+        (limit,)
+    ).fetchall()
     conn.close()
     return [dict(item) for item in feedbacks]
         
