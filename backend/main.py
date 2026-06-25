@@ -12,7 +12,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,6 +26,7 @@ class TicketRequest(BaseModel):
     category: str
 
 class Feedback(BaseModel):
+    customer_email: str
     rating: str
     comments: str
 
@@ -52,10 +53,14 @@ def init_db():
     conn.execute('''
         CREATE TABLE IF NOT EXISTS feedbacks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_email TEXT,
             rating TEXT,
             comments TEXT
         )
     ''')
+    feedback_columns = [row["name"] for row in conn.execute("PRAGMA table_info(feedbacks)").fetchall()]
+    if "customer_email" not in feedback_columns:
+        conn.execute("ALTER TABLE feedbacks ADD COLUMN customer_email TEXT DEFAULT 'unknown@example.com'")
     conn.commit()
     conn.close()
 
@@ -189,12 +194,19 @@ def approve_ticket(ticket_id: int):
 def submit_feedback(feedback: Feedback):
     conn = get_db_connection()
     conn.execute(
-        "INSERT INTO feedbacks (rating, comments) VALUES (?, ?)", 
-        (feedback.rating, feedback.comments)
+        "INSERT INTO feedbacks (customer_email, rating, comments) VALUES (?, ?, ?)", 
+        (feedback.customer_email, feedback.rating, feedback.comments)
     )
     conn.commit()
     conn.close()
     return {"message": "Feedback securely saved to database!"}
+
+@app.get("/feedback/")
+def get_feedbacks():
+    conn = get_db_connection()
+    feedbacks = conn.execute("SELECT * FROM feedbacks ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(item) for item in feedbacks]
         
 @app.delete("/tickets/{ticket_id}")
 def resolve_ticket(ticket_id: int):
