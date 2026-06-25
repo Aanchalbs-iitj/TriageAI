@@ -1,21 +1,30 @@
 import { useState, useEffect } from 'react'
 
 function App() {
-  // --- NAVIGATION & AUTH STATE ---
+  // Navigation and authentication states
   const [currentPage, setCurrentPage] = useState('dashboard') // 'dashboard', 'about', 'feedback'
   const [role, setRole] = useState('customer') // 'customer', 'agent', 'manager'
 
-  // --- DATA STATES ---
+  // data states for tickets and forms
   const [currentTicket, setCurrentTicket] = useState(null)
   const [reviewTickets, setReviewTickets] = useState([])
   const [formData, setFormData] = useState({ customer_email: '', description: '', category: 'General' })
   
-  // --- FEEDBACK STATE ---
+  // feedback form state
   const [feedbackData, setFeedbackData] = useState({ rating: '5', comments: '' })
 
-  // ==========================================
-  // BACKEND LOGIC
-  // ==========================================
+  // toast notification state
+  const [toast, setToast] = useState(null)
+
+  // shows message on screen for 3 seconds
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => {
+      setToast(null) 
+    }, 3000)
+  }
+
+ //backend logic starts here
   const handleSubmit = async (e) => {
     e.preventDefault() 
     try {
@@ -24,10 +33,11 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       })
-      alert("Ticket Successfully Submitted!")
+      showToast("Ticket Successfully Submitted!", "success")
       setFormData({ ...formData, description: '', customer_email: '' }) 
     } catch (error) {
       console.error("Error submitting ticket:", error)
+      showToast("Failed to submit ticket.", "error")
     }
   }
 
@@ -36,7 +46,7 @@ function App() {
       const response = await fetch('http://127.0.0.1:8000/tickets/next/')
       const data = await response.json()
       if (data.message === "Queue is empty!") {
-        alert("Inbox Zero! No open tickets right now.")
+        showToast("Inbox Zero! No open tickets.", "info")
         setCurrentTicket(null)
       } else {
         setCurrentTicket(data)
@@ -93,32 +103,43 @@ function App() {
     e.preventDefault()
     
     try {
-      // 1. Send the data to your Python backend
+      //Send the data to your Python backend
       await fetch('http://127.0.0.1:8000/feedback/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(feedbackData)
       })
       
-      // 2. Show success message
-      alert(`Thank you for rating us ${feedbackData.rating} stars! Your feedback has been securely saved.`)
+      //Show success message
+      showToast(`Thank you! Your ${feedbackData.rating}-star feedback has been saved.`, "success")
       
-      // 3. Clear the form
+      //Clear the form
       setFeedbackData({ rating: '5', comments: '' }) 
       
     } catch (error) {
       console.error("Error submitting feedback:", error)
-      alert("Failed to send feedback to the server.")
+      showToast("Failed to send feedback.", "error")
     }
   }
 
-  // ==========================================
-  // UI RENDER
-  // ==========================================
+  //UI rendering starts here
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      {/* floating toast notifications */}
+      {toast && (
+        <div className={`fixed top-24 right-8 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 ${
+          toast.type === 'success' ? 'bg-green-600 text-white border border-green-500' : 
+          toast.type === 'error' ? 'bg-red-600 text-white border border-red-500' : 
+          'bg-slate-800 text-white border border-slate-700'
+        }`}>
+          <span>
+            {toast.type === 'success' ? '✓' : toast.type === 'error' ? '✕' : 'ℹ'}
+          </span>
+          {toast.message}
+        </div>
+      )}
       
-      {/* --- PROFESSIONAL NAVBAR --- */}
+      {/* professional navbar */}
       <nav className="bg-slate-900 text-white p-4 shadow-md flex justify-between items-center px-8 z-20 sticky top-0">
         <div className="flex items-center gap-10">
           <h1 className="text-xl font-bold tracking-wide">TriageAI</h1>
@@ -142,7 +163,7 @@ function App() {
         )}
       </nav>
 
-      {/* --- CONDITIONAL MARKETING HERO (Only on 'About' page now) --- */}
+      {/* conditional marketing(Only on 'About' page now) */}
       {currentPage === 'about' && (
         <div className="relative overflow-hidden bg-slate-900 text-white py-20 mb-10 border-b border-slate-800">
           <div className="absolute top-0 left-0 w-full h-full opacity-30">
@@ -158,19 +179,19 @@ function App() {
         </div>
       )}
 
-      {/* --- MAIN CONTENT AREA --- */}
+      {/* main content area */}
       <div className="flex-grow">
         
-        {/* 1. DASHBOARD PAGE */}
+        {/* dashboard */}
         {currentPage === 'dashboard' && (
           <div className="animate-fade-in-up">
             
-          {/* CUSTOMER VIEW (Full Page Video Background + Scrolling Content) */}
+          {/* CUSTOMER VIEW */}
             {role === 'customer' && (
               <div className="relative flex flex-col items-center w-full min-h-screen bg-slate-900">
                 
-                {/* 1. THE FULL-PAGE FIXED VIDEO BACKGROUND */}
-                {/* Notice the 'fixed' class. This glues the video to the screen so it never scrolls away. */}
+                {/* full page fixed video background */}
+                {/* fixed class glues the video to the screen so it never scrolls away. */}
                 <video 
                   autoPlay 
                   loop 
@@ -181,10 +202,10 @@ function App() {
                   <source src="/network-bg.mp4" type="video/mp4" />
                 </video>
 
-                {/* 2. THE SCROLLING CONTENT (Sits on top of the video) */}
+                {/*THE SCROLLING CONTENT */}
                 <div className="relative z-10 w-full flex flex-col items-center px-4">
                   
-                  {/* Hero / Welcome Text */}
+                  {/*Welcome Text */}
                   <div className="flex flex-col items-center justify-center min-h-[70vh] text-center w-full max-w-3xl pt-20">
                     <h1 className="text-5xl font-light text-white mb-6 tracking-tight drop-shadow-lg">
                       Welcome to <span className="font-semibold text-blue-400">TriageAI</span>
@@ -257,7 +278,7 @@ function App() {
               </div>
             )}
             
-            {/* AGENT VIEW */}
+            {/* agent view*/}
             {role === 'agent' && (
                <div className="max-w-3xl mx-auto flex flex-col items-center mt-16 px-4">
                {!currentTicket ? (
@@ -289,7 +310,7 @@ function App() {
              </div>
             )}
 
-            {/* MANAGER VIEW */}
+            {/* manager view */}
             {role === 'manager' && (
               <div className="max-w-6xl mx-auto mt-10 px-4">
                 <div className="flex justify-between items-end mb-6 border-b border-slate-200 pb-4">
@@ -344,7 +365,7 @@ function App() {
           </div>
         )}
 
-        {/* 2. ABOUT PAGE (Upgraded Enterprise Terminology) */}
+        {/* about page */}
         {currentPage === 'about' && (
           <div className="max-w-4xl mx-auto bg-white p-10 rounded-2xl shadow-sm border border-slate-200 mt-[-20px] relative z-10 animate-fade-in-up mb-20">
             
@@ -356,7 +377,7 @@ function App() {
               </p>
             </div>
             
-            {/* 2-Grid Conceptual Layout */}
+            {/* Grid Conceptual Layout */}
             <div className="grid md:grid-cols-2 gap-8">
               
               {/* Card 1: Prioritization */}
@@ -372,7 +393,7 @@ function App() {
                 </p>
               </div>
 
-              {/* Card 2: HITL */}
+              {/* Card 2: human review */}
               <div className="bg-slate-50 p-8 rounded-xl border border-slate-200 hover:border-purple-300 transition-colors shadow-sm">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="bg-purple-100 text-purple-600 p-3 rounded-xl shadow-inner">
@@ -389,7 +410,7 @@ function App() {
           </div>
         )}
 
-        {/* 3. FEEDBACK PAGE */}
+        {/* 3. feedback page */}
         {currentPage === 'feedback' && (
           <div className="max-w-xl mx-auto bg-white p-10 mt-16 rounded shadow-sm border border-slate-200 animate-fade-in-up">
             <h2 className="text-xl font-bold mb-2 text-slate-800">Platform Feedback</h2>
