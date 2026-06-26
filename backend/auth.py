@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta, timezone
 import jwt
-from passlib.context import CryptContext
+import bcrypt
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,17 +10,20 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# password hashing engine
-# This uses bcrypt, the exact same algorithm used by major tech companies
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password, hashed_password):
-    """Checks if the typed password matches the scrambled hash in the DB"""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
+#password hashing engine
+def get_password_hash(password: str) -> str:
     """Scrambles a plain text password into an unreadable hash"""
-    return pwd_context.hash(password)
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(pwd_bytes, salt)
+    return hashed.decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Checks if the typed password matches the scrambled hash in the DB"""
+    pwd_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(pwd_bytes, hashed_bytes)
+
 
 # jwt token generator
 def create_access_token(data: dict):
@@ -34,5 +37,3 @@ def create_access_token(data: dict):
     # Sign the token using our secret key
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
-

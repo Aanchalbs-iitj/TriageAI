@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
+import Login from './Login' // Import login file
 
 function App() {
   // Navigation and authentication states
   const [currentPage, setCurrentPage] = useState('dashboard') // 'dashboard', 'about', 'feedback'
   const [role, setRole] = useState('customer') // 'customer', 'agent', 'manager'
+  const [showLoginScreen, setShowLoginScreen] = useState(false)
+  const [pendingRole, setPendingRole] = useState(null) // Remembers what they clicked
   const [agentDepartment, setAgentDepartment] = useState('All') // Tracks which queue the agent is working
 
   // data states for tickets and forms
@@ -177,8 +180,35 @@ function App() {
       showToast("Failed to send feedback.", "error")
     }
   }
-
+//The Traffic Controller Bouncer
+  const handleRoleChange = (e) => {
+    const selectedRole = e.target.value;
+    if (selectedRole === 'customer') {
+      localStorage.removeItem('triage_token');
+      localStorage.removeItem('triage_role');
+      setRole('customer');
+    } else {
+      const storedToken = localStorage.getItem('triage_token');
+      const storedRole = localStorage.getItem('triage_role');
+      if (storedToken && storedRole === selectedRole) {
+        setRole(selectedRole);
+      } else {
+        setPendingRole(selectedRole); //Save the intended role
+        setShowLoginScreen(true); // Stop them and show Login
+      }
+    }
+  };
+  
   //UI rendering starts here
+ if (showLoginScreen) {
+    return (
+      <Login 
+        intendedRole={pendingRole} //pass the intent to the Login component
+        onLogin={(role) => { setRole(role); setShowLoginScreen(false); setPendingRole(null); }} 
+        cancelLogin={() => { setShowLoginScreen(false); setRole('customer'); setPendingRole(null); }} 
+      />
+    );
+  }
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
       {/* floating toast notifications */}
@@ -210,7 +240,7 @@ function App() {
         {currentPage === 'dashboard' && (
           <div className="flex items-center gap-3 bg-slate-800 px-3 py-1.5 rounded border border-slate-700">
             <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Active Role:</span>
-            <select value={role} onChange={(e) => setRole(e.target.value)} className="bg-transparent text-white text-sm outline-none cursor-pointer">
+            <select value={role} onChange={handleRoleChange} className="bg-transparent text-white text-sm outline-none cursor-pointer">
               <option value="customer">Customer (Public)</option>
               <option value="agent">Support Agent</option>
               <option value="manager">Human Review Manager</option>
