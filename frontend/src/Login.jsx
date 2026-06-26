@@ -12,7 +12,7 @@ export default function Login({ onLogin, cancelLogin, intendedRole }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/login', {
+      const response = await fetch('https://triageai-backend-bqi3.onrender.com/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
