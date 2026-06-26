@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from auth import verify_password, get_password_hash, create_access_token
 from pydantic import BaseModel
 import sqlite3
 import json
@@ -58,9 +59,41 @@ def init_db():
             comments TEXT
         )
     ''')
+    #Users Table for Security
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL
+        )
+    ''')
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    if cursor.fetchone()[0] == 0:
+        manager_hash = get_password_hash("admin123")
+        agent_hash = get_password_hash("agent123")
+        
+        conn.execute("INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)", 
+                    ("manager@triage.com", manager_hash, "manager"))
+        conn.execute("INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)", 
+                    ("agent@triage.com", agent_hash, "agent"))
+        
+
+    # 1. Update Feedbacks Table
     feedback_columns = [row["name"] for row in conn.execute("PRAGMA table_info(feedbacks)").fetchall()]
     if "customer_email" not in feedback_columns:
         conn.execute("ALTER TABLE feedbacks ADD COLUMN customer_email TEXT DEFAULT 'unknown@example.com'")
+        
+    # 2. Update Tickets Table
+    ticket_columns = [row["name"] for row in conn.execute("PRAGMA table_info(tickets)").fetchall()]
+    if "confidence" not in ticket_columns:
+        conn.execute("ALTER TABLE tickets ADD COLUMN confidence INTEGER DEFAULT 100")
+    if "needs_review" not in ticket_columns:
+        conn.execute("ALTER TABLE tickets ADD COLUMN needs_review BOOLEAN DEFAULT 0")
+    if "ai_priority" not in ticket_columns:
+        conn.execute("ALTER TABLE tickets ADD COLUMN ai_priority INTEGER DEFAULT 50")
+
     conn.commit()
     conn.close()
 
@@ -222,3 +255,34 @@ def resolve_ticket(ticket_id: int):
     conn.commit()
     conn.close()
     return {"message": "Ticket resolved and removed."}
+
+# authentication starts from here
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/login")
+def login(request: LoginRequest):
+    conn = get_db_connection()
+    #Look up the user by email
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (request.email,)).fetchone()
+    conn.close()
+
+    # If user doesn't exist, kick them out
+    if not user:
+        # We don't import HTTPException at the top yet, so let's just return an error dictionary
+        return {"error": "Invalid email or password"}
+    
+    # If the typed password doesn't match the DB hash, kick them out
+    if not verify_password(request.password, dict(user)["password_hash"]):
+        return {"error": "Invalid email or password"}
+
+    #Success! Generate the secure JWT token
+    # We include their role inside the token so React knows which dashboard to show
+    access_token = create_access_token(data={"sub": dict(user)["email"], "role": dict(user)["role"]})
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "role": dict(user)["role"]
+    }
