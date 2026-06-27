@@ -13,7 +13,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],#deployment changes
+    allow_origins=[
+        "http://localhost:5173", # Keep this for local testing
+        "http://127.0.0.1:5173",
+        "https://triage-ai-jade-alpha.vercel.app"
+    ],#deployment changes
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
