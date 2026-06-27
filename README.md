@@ -16,7 +16,7 @@
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-*Instantly prioritize tickets · Route to the right team · Keep managers in control*
+*Instantly prioritize tickets · Route to the right team*
 
 </div>
 
