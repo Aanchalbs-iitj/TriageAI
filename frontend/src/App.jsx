@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Login from './Login' // Import login file
-
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 function App() {
   // Navigation and authentication states
   const [currentPage, setCurrentPage] = useState('dashboard') // 'dashboard', 'about', 'feedback'
@@ -35,7 +35,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault() 
     try {
-      await fetch('https://triageai-backend-bqi3.onrender.com', {
+      await fetch(`${API_URL}/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -51,7 +51,7 @@ function App() {
   const fetchNextTicket = async () => {
     try {
       // Send the selected department to the Python backend
-      const response = await fetch(`https://triageai-backend-bqi3.onrender.com/tickets/next/?category=${encodeURIComponent(agentDepartment)}`)
+      const response = await fetch(`${API_URL}/tickets/next/?category=${encodeURIComponent(agentDepartment)}`)
       const data = await response.json()
       
       if (data.message && data.message.includes("Queue is empty")) {
@@ -69,7 +69,7 @@ function App() {
 
   const handleResolve = async () => {
     try {
-      await fetch(`https://triageai-backend-bqi3.onrender.com/tickets/${currentTicket.id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/tickets/${currentTicket.id}`, { method: 'DELETE' })
       setCurrentTicket(null) 
     } catch (error) {
       console.error("Error resolving ticket:", error)
@@ -79,7 +79,7 @@ function App() {
   const fetchReviewTickets = async (showSuccessToast = true) => {
     setIsRefreshingQueue(true)
     try {
-      const response = await fetch('https://triageai-backend-bqi3.onrender.com/tickets/review/')
+      const response = await fetch(`${API_URL}/tickets/review/`)
       if (!response.ok) {
         throw new Error(`Review queue request failed with status ${response.status}`)
       }
@@ -99,7 +99,7 @@ function App() {
   const fetchAllFeedbacks = async (showSuccessToast = true) => {
     setIsRefreshingFeedback(true)
     try {
-      const response = await fetch('https://triageai-backend-bqi3.onrender.com/feedback/')
+      const response = await fetch(`${API_URL}/feedback/`)
       if (!response.ok) {
         throw new Error(`Feedback request failed with status ${response.status}`)
       }
@@ -120,8 +120,8 @@ function App() {
       const loadManagerDashboard = async () => {
         try {
           const [ticketsResponse, feedbackResponse] = await Promise.all([
-            fetch('https://triageai-backend-bqi3.onrender.com/tickets/review/'),
-            fetch('https://triageai-backend-bqi3.onrender.com/feedback/')
+            fetch(`${API_URL}/tickets/review/`),
+            fetch(`${API_URL}/feedback/`)
           ])
 
           const [tickets, feedbacks] = await Promise.all([
@@ -142,7 +142,7 @@ function App() {
 
   const handleApprove = async (id) => {
     try {
-      await fetch(`https://triageai-backend-bqi3.onrender.com/tickets/${id}/approve`, { method: 'PUT' })
+      await fetch(`${API_URL}/tickets/${id}/approve`, { method: 'PUT' })
       fetchReviewTickets()
     } catch (error) {
       console.error("Error approving ticket:", error)
@@ -151,7 +151,7 @@ function App() {
 
   const handleSpam = async (id) => {
     try {
-      await fetch(`https://triageai-backend-bqi3.onrender.com/tickets/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/tickets/${id}`, { method: 'DELETE' })
       fetchReviewTickets()
     } catch (error) {
       console.error("Error deleting spam:", error)
@@ -163,7 +163,7 @@ function App() {
     
     try {
       //Send the data to your Python backend
-      await fetch('https://triageai-backend-bqi3.onrender.com/feedback/', {
+      await fetch(`${API_URL}/feedback/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(feedbackData)
