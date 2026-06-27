@@ -22,7 +22,7 @@
 
 ---
 
-## Live Deployment
+## 🌐 Live Deployment
 
 | | URL |
 |---|---|
@@ -55,7 +55,7 @@ The moment a ticket is submitted, an LLM reads it, scores urgency from 1–100, 
 | 🎫 **Smart Agent Workspace** | Agents click "Pull Next Urgent Ticket" — always receive the single highest-priority open issue for their department. No scrolling, no cherry-picking |
 | 🛡 **Manager Review Sandbox** | Tickets with AI confidence < 70% are held in a capped queue of 5 for human approval or spam deletion |
 | 🔐 **Role-Based Access Control** | JWT authentication with bcrypt hashing. Strict role-checking on both frontend and backend ensures agents and managers only access their own views |
-| 📊 **Real-Time Feedback Loop** | Rolling board of the 9 most recent customer feedback submissions for manager sentiment checks |
+| 📊 **Customer Satisfaction Board** | After their issue is resolved, customers can rate the service and leave comments. Managers see a live rolling board of the 9 most recent submissions — a quick pulse check on how well the team is performing |
 | 🗑 **Spam Detection** | Gibberish or off-topic tickets receive near-zero confidence and are automatically quarantined from the live agent queue |
 
 ---
@@ -126,7 +126,7 @@ confidence  confidence
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 TriageAI/
@@ -154,7 +154,7 @@ TriageAI/
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Frontend
 | Technology | Purpose |
@@ -177,7 +177,7 @@ TriageAI/
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|:---:|-------------|
@@ -187,8 +187,8 @@ TriageAI/
 | `GET` | `/tickets/review/` | Manager | Fetch up to 5 low-confidence tickets awaiting human review |
 | `PUT` | `/tickets/{id}/approve` | Manager | Approve a flagged ticket and push it to the open queue |
 | `DELETE` | `/tickets/{id}` | Agent/Manager | Resolve and permanently remove a ticket |
-| `POST` | `/feedback/` | ✗ | Submit platform feedback (rating + comments) |
-| `GET` | `/feedback/` | Manager | Fetch the 9 most recent feedback submissions |
+| `POST` | `/feedback/` | ✗ | Submit a star rating + comments about the support experience after issue resolution |
+| `GET` | `/feedback/` | Manager | Fetch the 9 most recent customer satisfaction submissions |
 
 > 📖 Full interactive docs with request/response schemas at the [Swagger UI](https://triageai-backend-bqi3.onrender.com/docs)
 
@@ -286,7 +286,7 @@ VITE_API_URL=http://127.0.0.1:8000
 |------|-------|----------|--------|
 | Manager | `manager@triage.com` | `admin123` | Review sandbox, feedback board |
 | Agent | `agent@triage.com` | `agent123` | Department queue, ticket resolution |
-| Customer | *(no login required)* | — | Ticket submission, platform feedback |
+| Customer | *(no login required)* | — | Submit support tickets, rate the service after resolution |
 
 **How auth works under the hood:**
 1. `POST /login` verifies the password against the bcrypt hash stored in SQLite
